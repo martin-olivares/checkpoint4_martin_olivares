@@ -122,7 +122,7 @@ El JSON **no contiene secretos**: solo IDs de credenciales, de la base y tabla d
 ```
 checkpoint4_martin_olivares.json   # workflow n8n
 README.md
-credentials.png                    # captura de Credentials (3 conexiones activas)
+credentials.png                    # captura de Credentials (8 conexiones activas)
 evidencia/                         # (opcional) capturas del workflow y de ejecuciones
 workers/                           # (opcional) JSON de los 2 sub-workflows CP2
 ```
