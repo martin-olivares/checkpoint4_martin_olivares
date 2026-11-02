@@ -95,7 +95,7 @@ Con el workflow abierto, hacer **Execute Workflow** (o **Test step** nodo por no
 
 Las reglas de remitente (`no-reply@`) y de cabecera (`Auto-Submitted`) se pueden simular fijando (*Pin data*) un resultado en el Gmail Trigger y editando los campos `from.text` o `headers`.
 
-> ⚠️ Las pruebas escriben datos reales (HubSpot, Airtable, Sheets, borrador y Slack). Borrar los datos de prueba al terminar.
+> ⚠️ Se adjuntan pruebas de ejecución.
 
 ## 6. Requisitos previos del entorno
 
