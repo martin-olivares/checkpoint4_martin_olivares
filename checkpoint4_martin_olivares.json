@@ -1,0 +1,2029 @@
+{
+  "name": "CP4 - Ecosistema Omnicanal",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "CP4 - Ecosistema Omnicanal\n\nCapa 1 (Herramientas): Gmail, HubSpot CRM y Slack.\nCapa 2 (Integración): Autenticación estricta OAuth2.\nCapa 3 (Proceso): Triaje Manager-Worker, Memoria Dual (Airtable + LangChain).\nCapa 4 (Gobernanza): Blindaje Anti-Loop (12 reglas), Filtro Anti-400 (regex estricta), Mitigación Anti-409 (Look up + Update/Create), Barrera HITL (Create Draft) y notificación Slack con payload limpio.",
+        "height": 1076,
+        "width": 5400,
+        "color": 4
+      },
+      "id": "0c1bb0cf-2acd-43b4-88e3-569a1df26d34",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "readStatus": "unread"
+        },
+        "options": {
+          "downloadAttachments": false
+        }
+      },
+      "id": "d7c4bee1-8ad2-4785-a0e1-4ab318b8f7ef",
+      "name": "Gmail Trigger (Soporte)",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        528
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9oGsTPfCqExvPKAj",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "Escucha pasiva. Lee solo no leídos, sin descargar binarios."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{ ($json.subject || '').toString() }}",
+              "rightValue": "Auto-reply",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-2",
+              "leftValue": "={{ ($json.subject || '').toString() }}",
+              "rightValue": "Autoreply",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-3",
+              "leftValue": "={{ ($json.subject || '').toString() }}",
+              "rightValue": "Automatic reply",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-4",
+              "leftValue": "={{ ($json.subject || '').toString() }}",
+              "rightValue": "Out of office",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-5",
+              "leftValue": "={{ ($json.subject || '').toString() }}",
+              "rightValue": "Undeliverable",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-6",
+              "leftValue": "={{ ($json.subject || '').toString() }}",
+              "rightValue": "Delivery Status Notification",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-7",
+              "leftValue": "={{ ($json.subject || '').toString() }}",
+              "rightValue": "Respuesta automática",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-8",
+              "leftValue": "={{ (($json.from && $json.from.text) || $json.from || '').toString() }}",
+              "rightValue": "no-reply@",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-9",
+              "leftValue": "={{ (($json.from && $json.from.text) || $json.from || '').toString() }}",
+              "rightValue": "noreply@",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-10",
+              "leftValue": "={{ (($json.from && $json.from.text) || $json.from || '').toString() }}",
+              "rightValue": "mailer-daemon@",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-11",
+              "leftValue": "={{ (($json.headers && $json.headers['auto-submitted']) || '').toString().toLowerCase() }}",
+              "rightValue": "auto-replied",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "cond-12",
+              "leftValue": "={{ (($json.headers && $json.headers['auto-submitted']) || '').toString().toLowerCase() }}",
+              "rightValue": "auto-generated",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "8e118e60-be51-4d72-a0ec-b373a5206566",
+      "name": "IF: Filtro Anti-Bucle Definitivo",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        528
+      ],
+      "notesInFlow": true,
+      "notes": "Guardrail 1: corta rebotes y auto-respuestas (12 reglas, insensible a mayúsculas): asunto, remitente (from.text) y cabecera Auto-Submitted. True = Stop."
+    },
+    {
+      "parameters": {},
+      "id": "944d809e-458e-4459-ad10-2d28a48b9995",
+      "name": "Stop (Auto-reply)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        368,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "asig-1",
+              "name": "texto_original",
+              "value": "={{ ($json.text || ($json.html || '').replace(/<[^>]+>/g, ' ') || $json.snippet || 'Sin contenido').toString().replace(/\\r/g, '').replace(/\\n{3,}/g, '\\n\\n').trim().slice(0, 4000) || 'Sin contenido' }}",
+              "type": "string"
+            },
+            {
+              "id": "asig-2",
+              "name": "email",
+              "value": "={{ ((($json.from && $json.from.value && $json.from.value[0] && $json.from.value[0].address) || ($json.from || '').toString().replace(/^.*<([^>]+)>.*$/, '$1')) || '').toString().trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "asig-3",
+              "name": "asunto",
+              "value": "={{ ($json.subject || '(sin asunto)').toString().trim().slice(0, 200) }}",
+              "type": "string"
+            },
+            {
+              "id": "asig-4",
+              "name": "user_session_id",
+              "value": "={{ $json.threadId || $json.id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "asig-5",
+              "name": "nombre",
+              "type": "string",
+              "value": "={{ ($json.from && $json.from.value && $json.from.value[0] && $json.from.value[0].name || '').toString().replace(/[<>\"]/g, '').trim().slice(0, 80) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        624,
+        544
+      ],
+      "id": "eae3b13e-bbef-44c3-b1ca-cc6d0910a4d6",
+      "name": "SET: Data Stuffing",
+      "notesInFlow": true,
+      "notes": "Guardrail 2 (Anti Data Stuffing): deja solo texto plano (máx. 4000), email, asunto, nombre y session (threadId). Sin HTML ni binarios. Tolera mails sin asunto o sin texto plano."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "val-1",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "id": "val-2",
+              "leftValue": "={{ $json.texto_original }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1d8127e7-54e8-4eac-a963-d820d4257a0e",
+      "name": "IF: Payload Válido (Anti 400)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        544
+      ],
+      "notesInFlow": true,
+      "notes": "Guardrail 3 (Anti 400): email con formato estricto (sin comillas: evita romper fórmulas de Airtable) y cuerpo no vacío. False = Stop antes de tocar el CRM."
+    },
+    {
+      "parameters": {},
+      "id": "5c3da079-168d-4ebf-bb5f-0498d84e862c",
+      "name": "Stop (Payload Inválido)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        864,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "search",
+        "limit": 1,
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "email|string",
+                    "value": "={{ $json.email }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "properties": [
+            "email",
+            "firstname",
+            "lastname"
+          ]
+        }
+      },
+      "id": "7de5e859-aaaa-4d82-a389-67ef683e93a0",
+      "name": "HubSpot: Buscar Contacto",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        528
+      ],
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "XZYZGY3S8WIG5q6H",
+          "name": "HubSpot account"
+        }
+      },
+      "notes": "Guardrail 4: Look up previo (Anti 409). Mínimo privilegio: solo lee email, firstname y lastname. Always Output Data para que un contacto nuevo llegue al Create."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "crm-cond",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4ee4da34-8550-4651-a5c3-86da54d60d21",
+      "name": "IF: ¿Existe en CRM?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1344,
+        528
+      ],
+      "notesInFlow": true,
+      "notes": "True = ya existe en HubSpot -> Update. False = lead nuevo -> Create."
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "email": "={{ $('SET: Data Stuffing').item.json.email }}",
+        "additionalFields": {
+          "firstName": "={{ ($('SET: Data Stuffing').item.json.nombre || '').split(' ')[0] }}",
+          "lastName": "={{ ($('SET: Data Stuffing').item.json.nombre || '').split(' ').slice(1).join(' ') }}",
+          "lifeCycleStage": "lead",
+          "message": "={{ 'Último contacto por email (' + $now.toFormat('yyyy-MM-dd') + '): ' + $('SET: Data Stuffing').item.json.asunto }}"
+        },
+        "options": {}
+      },
+      "id": "44b7042f-06d7-4523-84dc-a958d4848253",
+      "name": "HubSpot: Crear Contacto",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        768
+      ],
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "XZYZGY3S8WIG5q6H",
+          "name": "HubSpot account"
+        }
+      },
+      "notes": "Rama Create: solo se alcanza si el Look up no encontró el contacto. Envía únicamente campos validados."
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apphQVao5ZOE5xKns",
+          "mode": "list",
+          "cachedResultName": "Stock",
+          "cachedResultUrl": "https://airtable.com/apphQVao5ZOE5xKns"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblbR20mu90biqmPV",
+          "mode": "list",
+          "cachedResultName": "Memoria",
+          "cachedResultUrl": "https://airtable.com/apphQVao5ZOE5xKns/tblbR20mu90biqmPV"
+        },
+        "filterByFormula": "=OR({Session_ID} = '{{ $('SET: Data Stuffing').item.json.user_session_id }}', {Email} = '{{ $('SET: Data Stuffing').item.json.email }}')",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1632,
+        576
+      ],
+      "id": "6f3d0448-c930-41e7-9a66-6c10935d6eab",
+      "name": "Airtable: Buscar memoria",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "e2hDJWUHCR10a7p7",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "cond-1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Conocido"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "cond-2",
+                    "leftValue": "={{ $('SET: Data Stuffing').item.json.email }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Nuevo con email"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        1792,
+        560
+      ],
+      "id": "df42bbda-bb8c-43d5-b03e-05c66c0a75dc",
+      "name": "Switch: ¿Quién es?"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "apphQVao5ZOE5xKns",
+          "mode": "list",
+          "cachedResultName": "Stock",
+          "cachedResultUrl": "https://airtable.com/apphQVao5ZOE5xKns"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblbR20mu90biqmPV",
+          "mode": "list",
+          "cachedResultName": "Memoria",
+          "cachedResultUrl": "https://airtable.com/apphQVao5ZOE5xKns/tblbR20mu90biqmPV"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('SET: Data Stuffing').item.json.email }}",
+            "Session_ID": "={{ $('SET: Data Stuffing').item.json.user_session_id }}",
+            "Fecha_Actualizacion": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Session_ID",
+              "displayName": "Session_ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Empresa",
+              "displayName": "Empresa",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Nivel_Urgencia",
+              "displayName": "Nivel_Urgencia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "BAJA",
+                  "value": "BAJA"
+                },
+                {
+                  "name": "MEDIA",
+                  "value": "MEDIA"
+                },
+                {
+                  "name": "ALTA",
+                  "value": "ALTA"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado_Caso",
+              "displayName": "Estado_Caso",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "nuevo",
+                  "value": "nuevo"
+                },
+                {
+                  "name": "en_proceso",
+                  "value": "en_proceso"
+                },
+                {
+                  "name": "escalado",
+                  "value": "escalado"
+                },
+                {
+                  "name": "resuelto",
+                  "value": "resuelto"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensajes",
+              "displayName": "Mensajes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ultimo_Worker",
+              "displayName": "Ultimo_Worker",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fecha_Actualizacion",
+              "displayName": "Fecha_Actualizacion",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Asunto_Principal",
+              "displayName": "Asunto_Principal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Puntos_Clave",
+              "displayName": "Puntos_Clave",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Accion_Requerida",
+              "displayName": "Accion_Requerida",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2128,
+        576
+      ],
+      "id": "40bd0aed-e108-41c7-bb73-ee9b17afa2d0",
+      "name": "Airtable: Crear ficha",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "e2hDJWUHCR10a7p7",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ctx-1",
+              "name": "record_id",
+              "value": "={{ $json.id || $('Airtable: Crear ficha').item?.json?.id || $('Airtable: Buscar memoria').item?.json?.id }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx-2",
+              "name": "email",
+              "value": "={{ $json.fields?.Email || $('SET: Data Stuffing').item.json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx-3",
+              "name": "mensajes",
+              "value": "={{ Number($json.fields?.Mensajes || 0) }}",
+              "type": "number"
+            },
+            {
+              "id": "ctx-4",
+              "name": "contexto",
+              "value": "=[INICIO DE CONTEXTO COMPARTIDO] Cliente: {{ $json.fields?.Nombre || 'No especificado' }} Email: {{ $json.fields?.Email || $('SET: Data Stuffing').item.json.email }} Estado del caso: {{ $json.fields?.Estado_Caso || 'nuevo' }} Resumen histórico: {{ $json.fields?.Asunto_Principal || 'Sin interacciones previas' }} Puntos clave: {{ $json.fields?.Puntos_Clave || 'Ninguno' }} [FIN DEL CONTEXTO COMPARTIDO]",
+              "type": "string"
+            },
+            {
+              "id": "ctx-5",
+              "name": "texto_original",
+              "value": "={{ $('SET: Data Stuffing').item.json.texto_original }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2256,
+        384
+      ],
+      "id": "641221f2-48b1-41b5-8511-de4c0cd14317",
+      "name": "SET: Contexto compartido"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.contexto }}\n\nMensaje actual del cliente:\n{{ $json.texto_original }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "INVENTARIO",
+              "description": "Consultas sobre stock, existencias, disponibilidad, reposición o precios de productos."
+            },
+            {
+              "category": "POLITICAS",
+              "description": "Consultas sobre devoluciones, garantías, reembolsos, cambios o políticas de soporte."
+            }
+          ]
+        },
+        "options": {
+          "fallback": "other"
+        }
+      },
+      "id": "929672cd-25df-4ba7-b450-57beb92fa69d",
+      "name": "Clasificador de Intención",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        2448,
+        592
+      ],
+      "id": "79784495-1cd2-46b0-95d0-bc7f4b495ed7",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "oK34DIqUUqbmyjWk",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $('SET: Data Stuffing').item.json.texto_original }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "producto_solicitado",
+              "description": "=Nombre exacto del producto mencionado por el usuario (ej. Tóner HP 85A)",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "df262a40-db8e-41af-8f40-b3da65af727d",
+      "name": "Extractor de Producto",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.1,
+      "position": [
+        2752,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        2752,
+        256
+      ],
+      "id": "3ca4f20f-8324-4f42-a5fe-f5765d3c8b21",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "oK34DIqUUqbmyjWk",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "inv-1",
+              "name": "intent",
+              "value": "inventario",
+              "type": "string"
+            },
+            {
+              "id": "inv-2",
+              "name": "producto_solicitado",
+              "value": "={{ $json.output.producto_solicitado }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "49a24567-5a65-4be2-9ac8-4e9c4728f65a",
+      "name": "Filtro Inventario",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3024,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ofiU91BNjxlvYGxJ",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        3216,
+        48
+      ],
+      "id": "522819ac-3ad3-41f1-accf-1bd3748d191d",
+      "name": "Call 'CP2 - Worker 1 Inventario'",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "log-1",
+              "name": "fecha",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "log-2",
+              "name": "worker",
+              "value": "Worker 1 - Inventario",
+              "type": "string"
+            },
+            {
+              "id": "log-3",
+              "name": "intent",
+              "value": "inventario",
+              "type": "string"
+            },
+            {
+              "id": "log-4",
+              "name": "status",
+              "value": "={{ $json.status ?? 'error' }}",
+              "type": "string"
+            },
+            {
+              "id": "log-5",
+              "name": "respuesta",
+              "value": "={{ $json.data ?? 'Worker 1 sin respuesta' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "67fc0aef-00b9-4fcd-9b2f-6c5745c36423",
+      "name": "Preparar Log Inventario",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3456,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pol-1",
+              "name": "intent",
+              "value": "politicas",
+              "type": "string"
+            },
+            {
+              "id": "pol-2",
+              "name": "consulta",
+              "value": "={{ $('SET: Data Stuffing').item.json.texto_original }}",
+              "type": "string"
+            },
+            {
+              "id": "pol-3",
+              "name": "contexto",
+              "value": "={{ $('SET: Contexto compartido').item.json.contexto }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "256e8892-5226-4b90-8ed3-6d75aebd1802",
+      "name": "Filtro Políticas",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2768,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "oWNBlhkkkT5Y0Xdy",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        3024,
+        512
+      ],
+      "id": "86c664fc-5753-4c11-b000-bea71495fae1",
+      "name": "Call 'CP2 - Worker 2 Políticas'",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "logp-1",
+              "name": "fecha",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "logp-2",
+              "name": "worker",
+              "value": "Worker 2 - Políticas",
+              "type": "string"
+            },
+            {
+              "id": "logp-3",
+              "name": "intent",
+              "value": "politicas",
+              "type": "string"
+            },
+            {
+              "id": "logp-4",
+              "name": "status",
+              "value": "={{ $json.status ?? 'error' }}",
+              "type": "string"
+            },
+            {
+              "id": "logp-5",
+              "name": "respuesta",
+              "value": "={{ $json.data ?? 'Worker 2 sin respuesta' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0ef35316-5969-4e1e-a2b9-bb825705a099",
+      "name": "Preparar Log Políticas",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3456,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "oth-1",
+              "name": "fecha",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "oth-2",
+              "name": "worker",
+              "value": "Ninguno (Manager)",
+              "type": "string"
+            },
+            {
+              "id": "oth-3",
+              "name": "intent",
+              "value": "sin_clasificar",
+              "type": "string"
+            },
+            {
+              "id": "oth-4",
+              "name": "status",
+              "value": "escalado",
+              "type": "string"
+            },
+            {
+              "id": "oth-5",
+              "name": "respuesta",
+              "value": "Tu consulta requiere asistencia personalizada. He derivado tu caso a un supervisor humano de nuestro equipo, quien te contactará a la brevedad a este correo.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5aaa984b-cac2-40ed-96ab-7fd08a525ee3",
+      "name": "Preparar Log Sin Clasificar",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2752,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1pDoajJA86tmcl91HZwGZUOH6zgnRKAYjjXF8cEZ-pLM",
+          "mode": "list",
+          "cachedResultName": "Log_observabilidad",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1pDoajJA86tmcl91HZwGZUOH6zgnRKAYjjXF8cEZ-pLM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1pDoajJA86tmcl91HZwGZUOH6zgnRKAYjjXF8cEZ-pLM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "worker",
+              "displayName": "worker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "respuesta",
+              "displayName": "respuesta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "threadId",
+              "displayName": "threadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "labelIds",
+              "displayName": "labelIds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "estado_caso",
+              "displayName": "estado_caso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "urgencia",
+              "displayName": "urgencia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "38cea37d-2726-4f85-9235-81619c40c9b9",
+      "name": "Registrar en Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3600,
+        384
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "30vP5OS32fsYa69B",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "apphQVao5ZOE5xKns",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblbR20mu90biqmPV",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('SET: Contexto compartido').item.json.record_id }}",
+            "Mensajes": "={{ Number($('SET: Contexto compartido').item.json.mensajes) + 1 }}",
+            "Fecha_Actualizacion": "={{ $now.toISO() }}",
+            "Ultimo_Worker": "={{ $('Clasificador de Intención').item.json.category || 'Atención' }}",
+            "Nivel_Urgencia": "={{ $('Registrar en Google Sheets').item.json.status === 'escalado' ? 'ALTA' : 'BAJA' }}",
+            "Estado_Caso": "={{ $('Registrar en Google Sheets').item.json.status === 'escalado' ? 'escalado' : 'en_proceso' }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        3808,
+        384
+      ],
+      "id": "e207569a-769a-46c0-91ba-b8257fb76dab",
+      "name": "Airtable: Actualizar ficha",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "e2hDJWUHCR10a7p7",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "c-compresion",
+              "leftValue": "={{ Number($('Airtable: Actualizar ficha').item.json.fields?.Mensajes || $('SET: Contexto compartido').item.json.mensajes + 1) }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        4000,
+        384
+      ],
+      "id": "b19beca8-780d-44f6-b3d8-e12942dc84a1",
+      "name": "IF: ¿Superó 5 mensajes?"
+    },
+    {
+      "parameters": {
+        "text": "=Contexto acumulado:\n{{ $('SET: Contexto compartido').item.json.contexto }}\n\nÚltimo mensaje del cliente:\n{{ $('SET: Data Stuffing').item.json.texto_original }}\n\nRespuesta del sistema:\n{{ $('Registrar en Google Sheets').item.json.respuesta || $('Registrar en Google Sheets').item.json.Respuesta }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Asunto_Principal",
+              "description": "Breve descripción del motivo central del contacto."
+            },
+            {
+              "name": "Accion_Requerida",
+              "description": "Próximo paso operativo concreto necesario."
+            },
+            {
+              "name": "Puntos_Clave",
+              "description": "Lista separada por comas con los detalles críticos."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        4208,
+        128
+      ],
+      "id": "bf5f2848-6a2e-4cc9-b867-1a4d44358d19",
+      "name": "Extractor de Resumen"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        4224,
+        352
+      ],
+      "id": "745a4a55-a06b-4b3b-8f3e-04ce2320d25f",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "oK34DIqUUqbmyjWk",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "apphQVao5ZOE5xKns",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblbR20mu90biqmPV",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('SET: Contexto compartido').item.json.record_id }}",
+            "Asunto_Principal": "={{ $json.output.Asunto_Principal }}",
+            "Puntos_Clave": "={{ $json.output.Puntos_Clave }}",
+            "Accion_Requerida": "={{ $json.output.Accion_Requerida }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        4496,
+        128
+      ],
+      "id": "4962256c-df92-43d3-8ff6-8a67b264394b",
+      "name": "Airtable: Guardar Resumen",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "e2hDJWUHCR10a7p7",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "user",
+              "message": "={{ $('SET: Data Stuffing').item.json.texto_original }}"
+            },
+            {
+              "type": "ai",
+              "message": "={{ $('Registrar en Google Sheets').item.json.respuesta || $('Registrar en Google Sheets').item.json.Respuesta || $('Preparar Log Sin Clasificar').item?.json?.respuesta || 'Tu consulta ha sido derivada a un supervisor humano.' }}"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        4304,
+        544
+      ],
+      "id": "35a2020a-9ef2-490d-8ff6-41bf48a9e65e",
+      "name": "Memoria: Corto Plazo"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('SET: Contexto compartido').item.json.email }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        4256,
+        768
+      ],
+      "id": "432ec2db-f05a-4cf9-b27f-f2da949841a9",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ /^re:/i.test($('SET: Data Stuffing').item.json.asunto) ? $('SET: Data Stuffing').item.json.asunto : 'Re: ' + $('SET: Data Stuffing').item.json.asunto }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html lang=\"es\">\n<head><meta charset=\"UTF-8\"></head>\n<body style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #334155; line-height: 1.6; padding: 20px; background-color: #f8fafc;\">\n  <div style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;\">\n    <div style=\"background-color: #2563eb; padding: 16px 20px;\">\n      <h2 style=\"margin: 0; color: #ffffff; font-size: 18px;\">Soporte al Cliente - Tu Tienda</h2>\n    </div>\n    <div style=\"padding: 24px 20px;\">\n      <p style=\"margin-top: 0;\">Estimado/a {{ (($('SET: Data Stuffing').item.json.nombre || '').split(' ')[0] || 'cliente').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}:</p>\n      <p style=\"white-space: pre-wrap;\">{{ ($('Registrar en Google Sheets').item.json.respuesta || $('Registrar en Google Sheets').item.json.Respuesta || $('Preparar Log Sin Clasificar').item?.json?.respuesta || 'Su consulta fue derivada a un supervisor humano.').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}</p>\n      <p>Quedamos a su disposición para cualquier consulta adicional.</p>\n      <p style=\"margin-bottom: 0;\">Saludos cordiales,<br><strong>Equipo de Atención al Cliente</strong></p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {
+          "threadId": "={{ $('Gmail Trigger (Soporte)').item.json.threadId }}",
+          "sendTo": "={{ $('SET: Data Stuffing').item.json.email }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        4608,
+        544
+      ],
+      "id": "8317ae9a-d335-4834-bc4e-a50274c1ac13",
+      "name": "Gmail: Create Draft (HITL)",
+      "notesInFlow": true,
+      "webhookId": "ab994fe7-10a9-47b1-8ef3-4584e4233d24",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9oGsTPfCqExvPKAj",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "Guardrail final (HITL): única operación de salida de Gmail = Create Draft. Nunca Send. Formato email formal (saludo, cuerpo, cierre y firma); el cuerpo va escapado contra HTML."
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0CE0JZ3QC9",
+          "mode": "list",
+          "cachedResultName": "alerta-orquesstador"
+        },
+        "text": "={{ $json.slackText }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "68070db8-b1e1-451b-ad3f-7d18b49d74e0",
+      "name": "Slack: Notificar Operaciones",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        5040,
+        544
+      ],
+      "notesInFlow": true,
+      "webhookId": "98a628a8-700f-4eb8-8603-aea2f731b0e6",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "tFHdGsCBvvwLGuLY",
+          "name": "Slack account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "Notifica al canal de operaciones (también las consultas escaladas). Recibe solo el texto ya limpio."
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "email": "={{ $('SET: Data Stuffing').item.json.email }}",
+        "additionalFields": {
+          "message": "={{ 'Último contacto por email (' + $now.toFormat('yyyy-MM-dd') + '): ' + $('SET: Data Stuffing').item.json.asunto }}"
+        },
+        "options": {}
+      },
+      "id": "6e63b167-09e4-4186-a78a-6671e7ae3e31",
+      "name": "HubSpot: Actualizar Contacto",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        336
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "notesInFlow": true,
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "XZYZGY3S8WIG5q6H",
+          "name": "HubSpot account"
+        }
+      },
+      "notes": "Rama Update: el contacto ya existe; solo actualiza el campo message (no pisa nombre ni datos previos)."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sl-1",
+              "name": "slackText",
+              "type": "string",
+              "value": "={{ ($('Airtable: Actualizar ficha').item.json.fields?.Estado_Caso === 'escalado' ? ':rotating_light: *[HITL REQUERIDO] Consulta escalada a supervisor*' : ':incoming_envelope: *Borrador listo para aprobación (HITL)*') + '\\n*Cliente:* ' + $('SET: Data Stuffing').item.json.email + '\\n*Asunto:* ' + $('SET: Data Stuffing').item.json.asunto.slice(0, 120).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '\\n*Intención:* ' + ($('Clasificador de Intención').item.json.category || 'sin_clasificar') + '\\n*Estado:* ' + ($('Airtable: Actualizar ficha').item.json.fields?.Estado_Caso || 'en_proceso') + '\\n_Revisar en Gmail > Borradores y aprobar el envío._' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "619ad46a-4973-406d-ae64-fd13adaca203",
+      "name": "SET: Limpiar Payload Slack",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4816,
+        544
+      ],
+      "notesInFlow": true,
+      "notes": "Filtro mínimo antes de Slack: solo un texto plano de 5 líneas (sin HTML, adjuntos ni objetos pesados). El asunto va escapado para evitar menciones masivas (<!channel>)."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger (Soporte)": {
+      "main": [
+        [
+          {
+            "node": "IF: Filtro Anti-Bucle Definitivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Filtro Anti-Bucle Definitivo": {
+      "main": [
+        [
+          {
+            "node": "Stop (Auto-reply)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SET: Data Stuffing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET: Data Stuffing": {
+      "main": [
+        [
+          {
+            "node": "IF: Payload Válido (Anti 400)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Payload Válido (Anti 400)": {
+      "main": [
+        [
+          {
+            "node": "HubSpot: Buscar Contacto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop (Payload Inválido)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot: Buscar Contacto": {
+      "main": [
+        [
+          {
+            "node": "IF: ¿Existe en CRM?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: ¿Existe en CRM?": {
+      "main": [
+        [
+          {
+            "node": "HubSpot: Actualizar Contacto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HubSpot: Crear Contacto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot: Crear Contacto": {
+      "main": [
+        [
+          {
+            "node": "Airtable: Buscar memoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable: Buscar memoria": {
+      "main": [
+        [
+          {
+            "node": "Switch: ¿Quién es?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: ¿Quién es?": {
+      "main": [
+        [
+          {
+            "node": "SET: Contexto compartido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Airtable: Crear ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable: Crear ficha": {
+      "main": [
+        [
+          {
+            "node": "SET: Contexto compartido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET: Contexto compartido": {
+      "main": [
+        [
+          {
+            "node": "Clasificador de Intención",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificador de Intención": {
+      "main": [
+        [
+          {
+            "node": "Extractor de Producto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filtro Políticas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar Log Sin Clasificar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extractor de Producto": {
+      "main": [
+        [
+          {
+            "node": "Filtro Inventario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro Inventario": {
+      "main": [
+        [
+          {
+            "node": "Call 'CP2 - Worker 1 Inventario'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'CP2 - Worker 1 Inventario'": {
+      "main": [
+        [
+          {
+            "node": "Preparar Log Inventario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Log Inventario": {
+      "main": [
+        [
+          {
+            "node": "Registrar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro Políticas": {
+      "main": [
+        [
+          {
+            "node": "Call 'CP2 - Worker 2 Políticas'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'CP2 - Worker 2 Políticas'": {
+      "main": [
+        [
+          {
+            "node": "Preparar Log Políticas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Log Políticas": {
+      "main": [
+        [
+          {
+            "node": "Registrar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Log Sin Clasificar": {
+      "main": [
+        [
+          {
+            "node": "Registrar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar en Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Airtable: Actualizar ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable: Actualizar ficha": {
+      "main": [
+        [
+          {
+            "node": "IF: ¿Superó 5 mensajes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: ¿Superó 5 mensajes?": {
+      "main": [
+        [
+          {
+            "node": "Extractor de Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Memoria: Corto Plazo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extractor de Resumen": {
+      "main": [
+        [
+          {
+            "node": "Airtable: Guardar Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable: Guardar Resumen": {
+      "main": [
+        [
+          {
+            "node": "Memoria: Corto Plazo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria: Corto Plazo": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Create Draft (HITL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Create Draft (HITL)": {
+      "main": [
+        [
+          {
+            "node": "SET: Limpiar Payload Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Clasificador de Intención",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extractor de Producto",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extractor de Resumen",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Memoria: Corto Plazo",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot: Actualizar Contacto": {
+      "main": [
+        [
+          {
+            "node": "Airtable: Buscar memoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET: Limpiar Payload Slack": {
+      "main": [
+        [
+          {
+            "node": "Slack: Notificar Operaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
