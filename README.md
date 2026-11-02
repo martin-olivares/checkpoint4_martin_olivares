@@ -4,6 +4,7 @@ Orquestador multi-agente (n8n Cloud) que evoluciona el **Manager Orquestador del
 
 - Archivo: [`checkpoint4_martin_olivares.json`](./checkpoint4_martin_olivares.json) (importable desde *Workflows → Import from file*).
 - Stack: n8n Cloud · Gmail · HubSpot · Slack · Airtable (memoria) · Google Sheets (observabilidad) · Google Gemini.
+- Workers 1 y 2
 
 ## 1. Conexiones activas (Credentials)
 
@@ -94,8 +95,6 @@ Con el workflow abierto, hacer **Execute Workflow** (o **Test step** nodo por no
 
 Las reglas de remitente (`no-reply@`) y de cabecera (`Auto-Submitted`) se pueden simular fijando (*Pin data*) un resultado en el Gmail Trigger y editando los campos `from.text` o `headers`.
 
-Evidencias (opcional): capturas del workflow completo y de una ejecución exitosa en la carpeta [`evidencia/`](./evidencia).
-
 > ⚠️ Las pruebas escriben datos reales (HubSpot, Airtable, Sheets, borrador y Slack). Borrar los datos de prueba al terminar.
 
 ## 6. Requisitos previos del entorno
@@ -120,9 +119,8 @@ El JSON **no contiene secretos**: solo IDs de credenciales, de la base y tabla d
 ## 9. Estructura del repositorio
 
 ```
-checkpoint4_martin_olivares.json   # workflow n8n
-README.md
 credentials.png                    # captura de Credentials (8 conexiones activas)
-evidencia/                         # (opcional) capturas del workflow y de ejecuciones
-workers/                           # (opcional) JSON de los 2 sub-workflows CP2
+README.md
+checkpoint4_martin_olivares.json   # workflow n8n
+workers                            # JSON de los 2 sub-workflows CP2
 ```
