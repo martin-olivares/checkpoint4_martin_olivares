@@ -1,0 +1,193 @@
+{
+  "name": "CP2 - Worker 2 Políticas",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## CP2 - Worker 2 Políticas\nSub-workflow especialista en soporte/políticas de devolución. Sin herramientas ni bases de datos: solo prompt estricto de dominio cerrado.\nEntrada: {intent, consulta}. Salida: {status, data} (mismo contrato que Worker 1).",
+        "height": 700,
+        "width": 1100
+      },
+      "id": "d0aadcf1-16b6-44f0-a587-c217cc45e9cb",
+      "name": "Nota General -60",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "72118685-7f36-485d-837d-e8d1d7d3ce92",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        208
+      ],
+      "notesInFlow": true,
+      "notes": "Execute Workflow Trigger: punto de entrada del Worker 2. Recibe el JSON limpio {intent, consulta} enviado por el nodo 'Ejecutar Worker 2 Políticas' del Manager."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==Consulta del cliente: {{ $('Execute Workflow Trigger').item.json.consulta }}",
+        "options": {
+          "systemMessage": "Eres el Especialista en Políticas de Devolución y Soporte. Dominio cerrado.\nREGLAS:\n1. Responde ÚNICAMENTE con base en el bloque POLITICAS_VIGENTES.\n2. Si la respuesta no está en POLITICAS_VIGENTES, responde exactamente: 'No tengo información sobre esa política. Derivar a un agente humano.'\n3. Español, tono profesional, máximo 4 oraciones.\n4. Prohibido inventar plazos, montos o condiciones.\n\nPOLITICAS_VIGENTES:\nPlazo de Devolución: Los clientes disponen de 30 días naturales desde la recepción del producto para solicitar devoluciones o cambios por insatisfacción.\n\nCondiciones del Producto: Para que una devolución sea válida, el artículo debe encontrarse en estado nuevo, sin indicios de uso, dentro de su empaque original cerrado y conservando todos sus manuales, cables, accesorios y etiquetas de fábrica.\n\nExcepciones Restrictivas: No se aceptan devoluciones bajo ninguna circunstancia para los siguientes rubros: licencias de software, videojuegos físicos con el precinto roto, consumibles de impresión (cartuchos y tóneres) y auriculares in-ear por normativas de higiene. Tampoco aplican devoluciones si el diagnóstico técnico detecta daño físico, golpes o exposición a líquidos.\n\nProceso de Reembolso: Una vez recibido y aprobado el equipo en nuestro depósito central, el reembolso se emitirá exclusivamente al mismo método de pago utilizado en la compra original. La acreditación demora entre 5 y 10 días hábiles, dependiendo de la entidad bancaria del cliente.\n\nGarantía por Defectos: Todos los dispositivos tecnológicos cuentan con 6 meses de garantía directa por fallas de hardware o defectos de fabricación. En estos casos, se prioriza la reparación técnica oficial o el reemplazo del equipo, no el reembolso de dinero. No cubre daños por variaciones de tensión eléctrica."
+        }
+      },
+      "id": "60ef23f1-bb3e-41e8-a8f7-ea42aa70aa80",
+      "name": "Agente Especialista en Políticas",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        160,
+        208
+      ],
+      "notesInFlow": true,
+      "onError": "continueErrorOutput",
+      "notes": "Agente Especialista en Políticas: AI Agent sin tools, con System Prompt estricto. Completar el bloque POLITICAS_VIGENTES con las políticas reales. Salida de error activada hacia 'Contrato de Error'."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5cfcdea0-8e6d-4c70-9eb5-5818941adb47",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "1d1cb1dc-e144-4ad8-a960-8a7a4f71a745",
+              "name": "data",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "497fae23-e07e-4c55-9f28-106079be6b3a",
+      "name": "Contrato de Salida",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        112
+      ],
+      "notesInFlow": true,
+      "notes": "Contrato de Salida: Set que devuelve {status:'success', data:<respuesta>} con formato idéntico al Worker 1."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "203dc352-6f6d-40a7-b075-40517b3ac2b3",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "f7bd64f4-45d3-4e21-9d03-8e6b54f9131a",
+              "name": "data",
+              "value": "Fallo en el Worker de Políticas (modelo)",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f2e2a959-dd38-490d-ab7d-886f2dd96e79",
+      "name": "Contrato de Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        336
+      ],
+      "notesInFlow": true,
+      "notes": "Contrato de Error: Set de contingencia. Devuelve {status:'error', data:'Fallo...'} para no bloquear al Manager."
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        32,
+        416
+      ],
+      "id": "c646ff01-bc32-456d-81ac-579c233347e2",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "oK34DIqUUqbmyjWk",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Agente Especialista en Políticas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Especialista en Políticas": {
+      "main": [
+        [
+          {
+            "node": "Contrato de Salida",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Contrato de Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Especialista en Políticas",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3bbb3f2f-9f6f-4996-aa11-5cb5d9cef19c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7addcda22dcec1c3921a67389e4ecf19fffcf2bf19173541d51cb4c8ea2d2e46"
+  },
+  "nodeGroups": [],
+  "id": "oWNBlhkkkT5Y0Xdy",
+  "tags": []
+}

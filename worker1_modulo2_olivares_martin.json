@@ -1,0 +1,283 @@
+{
+  "name": "CP2 - Worker 1 Inventario",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "CP2 - Worker 1 Inventario\nSub-workflow especialista técnico (evolución del CP1). Solo se ejecuta cuando el Manager lo invoca mediante el nodo 'Ejecutar Worker 1 Inventario'.\nEntrada: {intent, producto_solicitado}. Salida: {status, data}.\nTodo error se convierte en {status:'error'} mediante el nodo 'Contrato de Error' para no bloquear al Manager.",
+        "height": 720,
+        "width": 1240
+      },
+      "id": "ab72bad6-46d4-46ce-a151-63b81afe25bc",
+      "name": "Nota General -60",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==Producto solicitado: {{ $('Execute Workflow Trigger').first().json.producto_solicitado }}",
+        "options": {
+          "systemMessage": "Eres el Analista de Inventario. Dominio único: stock y reposición de productos.\nReglas:\nAl utilizar la 'Herramienta SerpApi', debes realizar la búsqueda empleando estrictamente el nombre oficial del producto tal como figura en los resultados de Airtable, descartando la frase coloquial del usuario.\nConsulta SIEMPRE la 'Herramienta Airtable' para obtener el stock del producto.\n\nREGLA CRÍTICA: Si el stock actual es MENOR A 5, TIENES PROHIBIDO responder inmediatamente. Debes usar OBLIGATORIAMENTE la 'Herramienta SerpApi' para buscar las 3 opciones de reposición más económicas en el mercado.\n\nResponde en español, de forma clara. Indica el stock actual y, si aplicó la regla crítica, presenta las 3 ofertas encontradas con sus precios.\n\nSi el producto no existe en Airtable, responde exactamente: 'Producto no encontrado en inventario.'\n\nProhibido inventar datos o precios; utiliza únicamente lo que devuelven las herramientas."
+        }
+      },
+      "id": "df5acfaa-7a6a-4976-a267-11be6370727e",
+      "name": "Agente Analista de Inventario",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        368,
+        320
+      ],
+      "notesInFlow": true,
+      "onError": "continueErrorOutput",
+      "notes": "Agente Analista de Inventario: AI Agent con prompt de dominio cerrado. Usa 'Herramienta Airtable' y 'Herramienta SerpApi' (únicas herramientas del Worker: Mínimo Privilegio). Tiene salida de error activada: si falla, el flujo sigue por 'Contrato de Error'."
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apphQVao5ZOE5xKns",
+          "mode": "list",
+          "cachedResultName": "Stock",
+          "cachedResultUrl": "https://airtable.com/apphQVao5ZOE5xKns"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblAf0Wts7lCPYN4B",
+          "mode": "list",
+          "cachedResultName": "Inventario",
+          "cachedResultUrl": "https://airtable.com/apphQVao5ZOE5xKns/tblAf0Wts7lCPYN4B"
+        },
+        "filterByFormula": "={{ $fromAI('formula','Fórmula de Airtable que busca si las primeras palabras del producto están en el nombre. Ejemplo: FIND(\"resma\", LOWER({Nombre})) > 0','string') }}",
+        "options": {}
+      },
+      "id": "7b88389d-6b15-4c5e-94d8-d84f781cce59",
+      "name": "Herramienta Airtable",
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        576
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "ovqzDx0TKxmDUXAI",
+          "name": "Airtable account"
+        }
+      },
+      "notes": "Herramienta Airtable: tool del agente. Busca registros de inventario en la tabla de Airtable. Reemplazar base, tabla, credencial y el nombre del campo {Producto} por los reales del CP1."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c3afd874-185b-4e50-9fcb-58edd530ce5b",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "6d432e97-de5d-4d5f-8159-36a9e4a3f91d",
+              "name": "data",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "c1411dbe-5776-453c-ae85-d573f2ba6597",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "119edbcc-73b7-4b76-8455-62625c46e058",
+      "name": "Contrato de Salida",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        96
+      ],
+      "notesInFlow": true,
+      "notes": "Contrato de Salida: Set que estandariza la respuesta exitosa a {status:'success', data:<texto del agente>}. Es el nodo de salida que lee el Manager."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "34e798c1-893b-44fe-a017-7e782e8829f1",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "74856f7a-029e-42f9-b167-61abdfeb366d",
+              "name": "data",
+              "value": "Fallo en el Worker de Inventario (Airtable/SerpApi/modelo)",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "aa2a62d1-d336-4d6e-898f-a056447bf883",
+      "name": "Contrato de Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        464
+      ],
+      "notesInFlow": true,
+      "notes": "Contrato de Error: Set de contingencia conectado a la salida de error del agente. Devuelve {status:'error', data:'Fallo...'} para que el Manager no quede bloqueado."
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        528
+      ],
+      "id": "b5d48e90-4ec1-4cbd-9ebc-6f8f4b5add15",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "8fe30c33-942c-4c5b-ade9-54ae5c7cc9ce",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        320
+      ],
+      "notesInFlow": true,
+      "notes": "Execute Workflow Trigger: punto de entrada del Worker 1. Recibe el JSON limpio {intent, producto_solicitado} enviado por el nodo 'Ejecutar Worker 1 Inventario' del Manager. No tiene acceso al historial del chat."
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta herramienta sirve exclusivamente para buscar opciones y precios de reposición en el mercado cuando el stock actual de un producto devuelto por Airtable es menor a 5 unidades.",
+        "operation": "amazon",
+        "k": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Search_Query__k_', ``, 'string') }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        528,
+        528
+      ],
+      "id": "d45cecd9-c666-46cd-98fa-8b405d157144",
+      "name": "Amazon search in SerpApi",
+      "credentials": {
+        "serpApi": {
+          "id": "AawoQjY81ud5ZWvs",
+          "name": "SerpApi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Agente Analista de Inventario": {
+      "main": [
+        [
+          {
+            "node": "Contrato de Salida",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Contrato de Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Herramienta Airtable": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Analista de Inventario",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Analista de Inventario",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Agente Analista de Inventario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amazon search in SerpApi": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Analista de Inventario",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2097e1f0-cf89-4d0c-98b6-a0be39c1d9e5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7addcda22dcec1c3921a67389e4ecf19fffcf2bf19173541d51cb4c8ea2d2e46"
+  },
+  "nodeGroups": [],
+  "id": "ofiU91BNjxlvYGxJ",
+  "tags": []
+}
